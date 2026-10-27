@@ -96,7 +96,41 @@
         body, bodyComplete, headers, authHeader, response: null, success: null,
       });
     }
-    if (!requests.length) errors.push('No REQUEST_URL found.');
+    // ---- Pass 2: EVENT_LOG_REQUEST / EVENT_LOG_RESPONSE (inbound MI calls, no URL in log) ----
+    const evReqRe = /"REQUEST_LOGGING"\s*:\s*/g; let em;
+    while ((em = evReqRe.exec(text))) {
+      const { json, complete } = extractBalanced(text, em.index + em[0].length);
+      let meta = null; try { meta = JSON.parse(json); } catch (_) {}
+      let payload = null, payloadComplete = complete;
+      const pIdx = json.search(/"REQUEST_PAYLOAD"\s*:/);
+      if (pIdx !== -1) { const r = extractBalanced(json, pIdx + 17); payload = r.json || null; payloadComplete = r.complete; }
+      const outer = text.slice(Math.max(0, em.index - 200), em.index);
+      const pick = k => { if (meta && meta[k]) return meta[k]; const re = new RegExp('"' + k + '"\\s*:\\s*"([^"]*)"'); const m = json.match(re) || outer.match(re); return m ? m[1] : null; };
+      requests.push({
+        kind: 'event', url: null, method: 'POST',
+        api: [pick('API'), pick('CHANNEL')].filter(Boolean).join(' · ') || 'EVENT_LOG_REQUEST',
+        time: pick('TIMESTAMP'), correlationId: pick('CORRELATION_ID'), tranId: pick('TRAN_ID'), msisdn: pick('MSISDN'),
+        body: payload, bodyComplete: payloadComplete, headers: {}, authHeader: null, response: null, success: null,
+      });
+    }
+    const evResRe = /"RESPONSE_LOGGING"\s*:\s*/g;
+    while ((em = evResRe.exec(text))) {
+      const { json } = extractBalanced(text, em.index + em[0].length);
+      const cidM = json.match(/"CORRELATION_ID"\s*:\s*"([^"]*)"/);
+      const rIdx = json.search(/"RESPONSE"\s*:/);
+      const resp = rIdx !== -1 ? extractBalanced(json, rIdx + 10).json : null;
+      const target = requests.find(r => r.kind === 'event' && !r.response && cidM && r.correlationId === cidM[1]) ||
+                     requests.slice().reverse().find(r => r.kind === 'event' && !r.response);
+      if (target) {
+        target.response = resp;
+        let o = null; try { o = JSON.parse(resp); } catch (_) {}
+        target.success = o ? (o.success === true || (typeof o.code === 'number' && o.code >= 200 && o.code < 300)) : null;
+        if (o && o.success === false) target.success = false;
+      }
+    }
+    requests.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+    if (!requests.length) errors.push('No REQUEST_URL or EVENT_LOG_REQUEST found.');
     return { requests, errors };
   }
 
@@ -107,8 +141,13 @@
 
   function toCurl(r, opts) {
     opts = opts || {};
-    const parts = ['curl -sS -X ' + r.method + ' ' + shq(r.url)];
+    const url = r.url || (opts.eventUrl && opts.eventUrl.trim()) || 'https://<MI-HOST>/<endpoint-not-in-log>';
+    const parts = ['curl -sS -X ' + r.method + ' ' + shq(url)];
     const hdrs = Object.assign({}, r.headers);
+    if (r.kind === 'event') {
+      if (r.correlationId) hdrs['X-Correlation-ID'] = r.correlationId;
+      if (opts.eventAuth && opts.eventAuth.trim()) hdrs['Authorization'] = opts.eventAuth.trim();
+    }
     const has = k => Object.keys(hdrs).some(h => h.toLowerCase() === k);
     if (r.authHeader && !has('authorization')) hdrs['Authorization'] = opts.maskToken ? maskTok(r.authHeader) : r.authHeader;
     if (r.body && !has('content-type')) hdrs['Content-Type'] = 'application/json';

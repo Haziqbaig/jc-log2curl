@@ -44,6 +44,9 @@
   .resp-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px 0; background: #0f1a12; }
   .copy { margin-left: auto; }
   .note { font-size: 12px; color: var(--yellow); padding: 6px 12px; background: #2a2211; border-top: 1px solid var(--border); }
+  .evbar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .evbar input { flex: 1; min-width: 180px; background: #0d1117; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: 12px ui-monospace, Menlo, Consolas, monospace; }
+  .badge.b-kind { background: #3a2a5f; color: #d2a8ff; }
   .toast { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: #04150a; font-weight: 600; padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: 1; }
 </style>
@@ -65,6 +68,11 @@
         <button id="btnClear">Clear</button>
         <button class="primary" id="btnGen">Generate cURL ▶</button>
       </div>
+    </div>
+    <div class="evbar">
+      <span title="Inbound EVENT_LOG entries don't record the URL that was called. Set it once here.">Inbound MI endpoint</span>
+      <input id="evUrl" type="text" placeholder="https://mi-host/jazzcash/whatsapp/inbound  (used for EVENT_LOG entries — not in the log)" spellcheck="false">
+      <input id="evAuth" type="text" placeholder="Authorization header (optional)" spellcheck="false">
     </div>
     <textarea id="input" placeholder="Paste WSO2 / Synapse log-mediator output here (JSON-wrapped lines, multi-line bodies — anything goes)…" spellcheck="false"></textarea>
   </section>
@@ -94,7 +102,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt
 function render() {
   const text = input.value;
   if (!text.trim()) { out.innerHTML = '<div class="empty">Nothing to parse.</div>'; return; }
-  const opts = { successOnly: $('#optSuccessOnly').checked, maskToken: $('#optMask').checked };
+  const opts = { successOnly: $('#optSuccessOnly').checked, maskToken: $('#optMask').checked, eventUrl: $('#evUrl').value, eventAuth: $('#evAuth').value };
   const { requests, errors } = Log2Curl.parse(text);
   const shown = opts.successOnly ? requests.filter(r => r.success !== false) : requests;
 
@@ -111,12 +119,14 @@ function render() {
     return `<div class="req">
       <div class="req-head">
         <span class="badge b-method">${esc(r.method)}</span>
+        ${r.kind === 'event' ? '<span class="badge b-kind">INBOUND</span>' : ''}
         ${status}
-        <span class="api">${esc(r.api || new URL(r.url).pathname)}</span>
+        <span class="api">${esc(r.api || (r.url ? new URL(r.url).pathname : ''))}</span>
         <span class="time">${esc(r.time || '')}</span>
         <button class="copy" data-i="${i}">Copy</button>
       </div>
       ${r.bodyComplete ? '' : '<div class="note">⚠ Request body appears truncated in the log — complete it before running.</div>'}
+      ${r.kind === 'event' && !opts.eventUrl.trim() ? '<div class="note">ℹ This is an inbound EVENT_LOG entry — the log doesn\'t record the URL. Fill in <b>Inbound MI endpoint</b> above to get a runnable cURL.' + (r.tranId ? ' TRAN_ID ' + esc(r.tranId) : '') + '</div>' : ''}
       <pre id="curl-${i}">${esc(curl)}</pre>
       ${r.response ? `<div class="resp-title">Expected response (from log)</div><pre class="resp">${esc(Log2Curl.pretty(r.response))}</pre>` : ''}
     </div>`;
@@ -130,6 +140,10 @@ function render() {
 $('#btnGen').onclick = render;
 $('#optSuccessOnly').onchange = render;
 $('#optMask').onchange = render;
+$('#evUrl').oninput = render; $('#evAuth').oninput = render;
+$('#evUrl').value = localStorage.getItem('evUrl') || ''; $('#evAuth').value = localStorage.getItem('evAuth') || '';
+$('#evUrl').addEventListener('change', e => localStorage.setItem('evUrl', e.target.value));
+$('#evAuth').addEventListener('change', e => localStorage.setItem('evAuth', e.target.value));
 $('#btnClear').onclick = () => { input.value = ''; render(); input.focus(); };
 $('#btnCopyAll').onclick = () => { if (!lastScript) return showToast('Nothing to copy'); navigator.clipboard.writeText(lastScript).then(() => showToast('Copied all')); };
 $('#btnDownload').onclick = () => {
