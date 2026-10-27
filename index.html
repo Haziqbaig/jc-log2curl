@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JC WhatsApp MI — Log → cURL</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+    --accent: #2f81f7; --green: #3fb950; --red: #f85149; --yellow: #d29922;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 18px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  .privacy { font-size: 12px; color: var(--muted); }
+  .privacy b { color: var(--green); }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 28px; min-height: calc(100vh - 70px); }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+  .panel-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .panel-head h2 { margin: 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  textarea { flex: 1; min-height: 420px; width: 100%; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 14px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { background: #21262d; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { filter: brightness(1.1); }
+  label.opt { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  #out { flex: 1; overflow: auto; padding: 14px; }
+  .empty { color: var(--muted); font-size: 14px; padding: 30px; text-align: center; }
+  .req { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .req-head { padding: 8px 12px; background: #1c2129; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+  .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: .03em; }
+  .b-method { background: #1f3a5f; color: #79c0ff; }
+  .b-ok { background: #1a3a26; color: var(--green); }
+  .b-warn { background: #3d2e0f; color: var(--yellow); }
+  .b-err { background: #4a1c1c; color: var(--red); }
+  .req-head .api { font-weight: 600; }
+  .req-head .time { color: var(--muted); margin-left: auto; }
+  pre { margin: 0; padding: 12px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+  pre.resp { background: #0f1a12; color: #9fd8a8; border-top: 1px dashed var(--border); }
+  .resp-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px 0; background: #0f1a12; }
+  .copy { margin-left: auto; }
+  .note { font-size: 12px; color: var(--yellow); padding: 6px 12px; background: #2a2211; border-top: 1px solid var(--border); }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: #04150a; font-weight: 600; padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>JC WhatsApp MI <span>· Log → cURL</span></h1>
+  <div class="privacy">🔒 <b>100% client-side.</b> Nothing you paste leaves this browser tab.</div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Raw logs</h2>
+      <div class="actions">
+        <label class="opt"><input type="checkbox" id="optSuccessOnly" checked> success only</label>
+        <label class="opt"><input type="checkbox" id="optMask"> mask token</label>
+        <button id="btnSample">Load sample</button>
+        <button id="btnClear">Clear</button>
+        <button class="primary" id="btnGen">Generate cURL ▶</button>
+      </div>
+    </div>
+    <textarea id="input" placeholder="Paste WSO2 / Synapse log-mediator output here (JSON-wrapped lines, multi-line bodies — anything goes)…" spellcheck="false"></textarea>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Generated cURL</h2>
+      <div class="actions">
+        <button id="btnCopyAll">Copy all</button>
+        <button id="btnDownload">Download .sh</button>
+      </div>
+    </div>
+    <div id="out"><div class="empty">Paste logs on the left and hit <b>Generate</b>.</div></div>
+  </section>
+</main>
+<div class="toast" id="toast">Copied</div>
+
+<script src="parser.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const input = $('#input'), out = $('#out'), toast = $('#toast');
+let lastScript = '';
+
+function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1400); }
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function render() {
+  const text = input.value;
+  if (!text.trim()) { out.innerHTML = '<div class="empty">Nothing to parse.</div>'; return; }
+  const opts = { successOnly: $('#optSuccessOnly').checked, maskToken: $('#optMask').checked };
+  const { requests, errors } = Log2Curl.parse(text);
+  const shown = opts.successOnly ? requests.filter(r => r.success !== false) : requests;
+
+  if (!shown.length) {
+    out.innerHTML = `<div class="empty">No ${opts.successOnly ? 'successful ' : ''}requests found.${errors.length ? '<br><small>' + esc(errors.join(' · ')) + '</small>' : ''}${requests.length && opts.successOnly ? '<br><small>Untick "success only" to see ' + requests.length + ' request(s) with non-success responses.</small>' : ''}</div>`;
+    lastScript = ''; return;
+  }
+
+  lastScript = '#!/usr/bin/env bash\nset -euo pipefail\n\n' + shown.map(r => Log2Curl.toCurl(r, opts) + (r.response ? '\n\n# Expected response:\n' + Log2Curl.pretty(r.response).split('\n').map(l => '#   ' + l).join('\n') : '')).join('\n\n\n') + '\n';
+
+  out.innerHTML = shown.map((r, i) => {
+    const curl = Log2Curl.toCurl(r, opts);
+    const status = r.success === true ? '<span class="badge b-ok">SUCCESS</span>' : r.success === false ? '<span class="badge b-err">FAILED</span>' : '<span class="badge b-warn">NO RESPONSE</span>';
+    return `<div class="req">
+      <div class="req-head">
+        <span class="badge b-method">${esc(r.method)}</span>
+        ${status}
+        <span class="api">${esc(r.api || new URL(r.url).pathname)}</span>
+        <span class="time">${esc(r.time || '')}</span>
+        <button class="copy" data-i="${i}">Copy</button>
+      </div>
+      ${r.bodyComplete ? '' : '<div class="note">⚠ Request body appears truncated in the log — complete it before running.</div>'}
+      <pre id="curl-${i}">${esc(curl)}</pre>
+      ${r.response ? `<div class="resp-title">Expected response (from log)</div><pre class="resp">${esc(Log2Curl.pretty(r.response))}</pre>` : ''}
+    </div>`;
+  }).join('');
+
+  out.querySelectorAll('.copy').forEach(b => b.onclick = () => {
+    navigator.clipboard.writeText($('#curl-' + b.dataset.i).textContent).then(() => showToast('Copied cURL'));
+  });
+}
+
+$('#btnGen').onclick = render;
+$('#optSuccessOnly').onchange = render;
+$('#optMask').onchange = render;
+$('#btnClear').onclick = () => { input.value = ''; render(); input.focus(); };
+$('#btnCopyAll').onclick = () => { if (!lastScript) return showToast('Nothing to copy'); navigator.clipboard.writeText(lastScript).then(() => showToast('Copied all')); };
+$('#btnDownload').onclick = () => {
+  if (!lastScript) return showToast('Nothing to download');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lastScript], { type: 'text/x-sh' }));
+  a.download = 'replay.sh'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('#btnSample').onclick = () => { input.value = Log2Curl.SAMPLE; render(); };
+input.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') render(); });
+input.addEventListener('paste', () => setTimeout(render, 0));
+</script>
+</body>
+</html>
