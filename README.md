@@ -1,13 +1,24 @@
 # JC WhatsApp MI — Log → cURL
 
-Paste raw WSO2 / Synapse log-mediator output from the JazzCash WhatsApp MI, get ready-to-run `curl` commands for the successful downstream calls (with the logged response shown for comparison).
-
 **Live:** https://haziqbaig.github.io/jc-log2curl/
 
-- 100% client-side — logs never leave the browser.
-- Also parses inbound `EVENT_LOG_REQUEST` / `EVENT_LOG_RESPONSE` entries (paired by `CORRELATION_ID`); set the MI endpoint once in the UI since the log omits the URL.
-- Parses `HeaderToken`, `REQUEST_URL`, `REQUEST_METHOD`, `REQUEST_BODY` (multi-line OK), `RESPONSE_BODY`.
-- Pairs each RESPONSE with its REQUEST and judges success (Infobip status groups, `requestError`, HTTP codes).
-- Options: success-only filter, token masking, copy / download as `replay.sh`.
+Drop a WSO2 Micro Integrator log file (or paste lines) from the JazzCash WhatsApp MI and get, for every API call:
 
-Local CLI equivalent: `node ../tools/log2curl.mjs <logfile>`.
+- a plain-English **"What this does"** explanation,
+- a ready-to-run **cURL** that replays it,
+- the **response the system actually gave**, so you can compare.
+
+Recognised call types:
+
+| Direction | Source in log | Example |
+|---|---|---|
+| MI ➜ Infobip | `DOWNSTREAM_CALL = REQUEST/RESPONSE` | send MPIN flow, text, buttons |
+| MI ➜ Infobip (media) | `IMG_CONVERT START \| url=` | download customer image |
+| MI ➜ Antlere | `Token_API_URL`, `Customer to Agent DM Request` | live-agent token + ticket |
+| MI ➜ Huawei CPS (SOAP) | `Envelope: <?xml …` + `DownstreamURLValue` | QueryIdentityInformation |
+| Infobip ➜ MI | `Whatsapp Main - Request` | customer webhook (needs MI host) |
+| CPS ➜ MI | `CPS - Result Message Dispatcher` | wallet callback (`cpscallexecute`) |
+
+Everything runs client-side — logs containing API keys never leave the browser. "Mask secrets" redacts them for screenshots.
+
+CLI equivalent (downstream calls only): `node ../tools/log2curl.mjs <logfile>`.

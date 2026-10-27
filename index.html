@@ -5,87 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JC WhatsApp MI — Log → cURL</title>
 <style>
-  :root {
-    --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e;
-    --accent: #2f81f7; --green: #3fb950; --red: #f85149; --yellow: #d29922;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
-  header { padding: 18px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
-  header h1 span { color: var(--muted); font-weight: 400; }
-  .privacy { font-size: 12px; color: var(--muted); }
-  .privacy b { color: var(--green); }
-  main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 28px; min-height: calc(100vh - 70px); }
-  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-  .panel-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-  .panel-head h2 { margin: 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  textarea { flex: 1; min-height: 420px; width: 100%; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 14px; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  button { background: #21262d; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
-  button:hover { border-color: var(--muted); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button.primary:hover { filter: brightness(1.1); }
-  label.opt { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
-  #out { flex: 1; overflow: auto; padding: 14px; }
-  .empty { color: var(--muted); font-size: 14px; padding: 30px; text-align: center; }
-  .req { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
-  .req-head { padding: 8px 12px; background: #1c2129; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
-  .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: .03em; }
-  .b-method { background: #1f3a5f; color: #79c0ff; }
-  .b-ok { background: #1a3a26; color: var(--green); }
-  .b-warn { background: #3d2e0f; color: var(--yellow); }
-  .b-err { background: #4a1c1c; color: var(--red); }
-  .req-head .api { font-weight: 600; }
-  .req-head .time { color: var(--muted); margin-left: auto; }
-  pre { margin: 0; padding: 12px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
-  pre.resp { background: #0f1a12; color: #9fd8a8; border-top: 1px dashed var(--border); }
-  .resp-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px 0; background: #0f1a12; }
-  .copy { margin-left: auto; }
-  .note { font-size: 12px; color: var(--yellow); padding: 6px 12px; background: #2a2211; border-top: 1px solid var(--border); }
-  .evbar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); flex-wrap: wrap; }
-  .evbar input { flex: 1; min-width: 180px; background: #0d1117; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: 12px ui-monospace, Menlo, Consolas, monospace; }
-  .badge.b-kind { background: #3a2a5f; color: #d2a8ff; }
-  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: #04150a; font-weight: 600; padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
-  .toast.show { opacity: 1; }
+  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#2f81f7; --green:#3fb950; --red:#f85149; --yellow:#d29922; --purple:#d2a8ff; --cyan:#79c0ff; --orange:#ffa657; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:14px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:17px; font-weight:600; } header h1 span { color:var(--muted); font-weight:400; }
+  .privacy { font-size:12px; color:var(--muted); } .privacy b { color:var(--green); }
+  main { display:grid; grid-template-columns:minmax(320px,2fr) 3fr; gap:16px; padding:16px 24px; min-height:calc(100vh - 64px); }
+  @media (max-width:1000px) { main { grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; display:flex; flex-direction:column; overflow:hidden; min-height:400px; }
+  .panel-head { padding:9px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .panel-head h2 { margin:0; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  textarea { flex:1; min-height:300px; width:100%; resize:vertical; border:0; outline:0; background:transparent; color:var(--text); font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; padding:12px; }
+  .drop { border:2px dashed var(--border); margin:10px; border-radius:8px; padding:14px; text-align:center; color:var(--muted); font-size:13px; cursor:pointer; transition:.15s; }
+  .drop:hover, .drop.over { border-color:var(--accent); color:var(--text); background:#161e2b; }
+  .drop input { display:none; }
+  .actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  button { background:#21262d; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 11px; font-size:12.5px; cursor:pointer; }
+  button:hover { border-color:var(--muted); } button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  label.opt { font-size:12px; color:var(--muted); display:inline-flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; }
+  .evbar { display:flex; gap:8px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); flex-wrap:wrap; }
+  .evbar input { flex:1; min-width:160px; background:#0d1117; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 8px; font:12px ui-monospace,Menlo,Consolas,monospace; }
+  #out { flex:1; overflow:auto; padding:12px; }
+  .empty { color:var(--muted); font-size:14px; padding:30px; text-align:center; line-height:1.6; }
+  .summary { font-size:12.5px; color:var(--muted); padding:0 2px 10px; display:flex; gap:14px; flex-wrap:wrap; }
+  .summary b { color:var(--text); }
+  .req { border:1px solid var(--border); border-radius:8px; margin-bottom:14px; overflow:hidden; }
+  .req-head { padding:8px 12px; background:#1c2129; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; }
+  .badge { font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.03em; white-space:nowrap; }
+  .b-method { background:#1f3a5f; color:var(--cyan); } .b-ok { background:#1a3a26; color:var(--green); } .b-warn { background:#3d2e0f; color:var(--yellow); } .b-err { background:#4a1c1c; color:var(--red); }
+  .b-dir { background:#2a2a3a; color:var(--purple); } .b-soap { background:#3a2a1a; color:var(--orange); }
+  .req-head .api { font-weight:600; } .req-head .time { color:var(--muted); margin-left:auto; font-size:11.5px; }
+  .what { padding:9px 12px; font-size:13px; line-height:1.5; color:#c9d1d9; background:#13181f; border-bottom:1px solid var(--border); }
+  .what b { color:var(--text); }
+  .expl { padding:7px 12px; font-size:12px; color:var(--muted); background:#13181f; border-bottom:1px solid var(--border); line-height:1.6; }
+  .expl code { color:var(--cyan); background:#0d1117; padding:1px 5px; border-radius:4px; }
+  pre { margin:0; padding:12px; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:pre-wrap; word-break:break-all; }
+  pre.resp { background:#0f1a12; color:#9fd8a8; border-top:1px dashed var(--border); }
+  .resp-title { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:8px 12px 0; background:#0f1a12; }
+  .note { font-size:12px; color:var(--yellow); padding:6px 12px; background:#2a2211; border-top:1px solid var(--border); line-height:1.5; }
+  .note.info { color:var(--cyan); background:#11202e; }
+  .tools { display:flex; gap:6px; margin-left:auto; }
+  .toast { position:fixed; bottom:20px; right:20px; background:var(--green); color:#04150a; font-weight:600; padding:8px 14px; border-radius:6px; opacity:0; transition:opacity .2s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  details.gloss { margin-top:6px; font-size:12.5px; color:var(--muted); } details.gloss summary { cursor:pointer; color:var(--text); }
+  details.gloss table { margin-top:6px; border-collapse:collapse; } details.gloss td { padding:3px 10px 3px 0; vertical-align:top; } details.gloss td:first-child { color:var(--cyan); font-family:ui-monospace,Menlo,monospace; white-space:nowrap; }
+  select { background:#0d1117; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:4px 6px; font-size:12px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>JC WhatsApp MI <span>· Log → cURL</span></h1>
-  <div class="privacy">🔒 <b>100% client-side.</b> Nothing you paste leaves this browser tab.</div>
+  <h1>JC WhatsApp MI <span>· paste logs → get cURLs you can run, with plain-English explanations</span></h1>
+  <div class="privacy">🔒 <b>100% in your browser.</b> Nothing you paste or upload is sent anywhere.</div>
 </header>
 
 <main>
   <section class="panel">
     <div class="panel-head">
-      <h2>Raw logs</h2>
+      <h2>1 · Raw logs</h2>
       <div class="actions">
-        <label class="opt"><input type="checkbox" id="optSuccessOnly" checked> success only</label>
-        <label class="opt"><input type="checkbox" id="optMask"> mask token</label>
         <button id="btnSample">Load sample</button>
         <button id="btnClear">Clear</button>
-        <button class="primary" id="btnGen">Generate cURL ▶</button>
+        <button class="primary" id="btnGen">Generate ▶</button>
       </div>
     </div>
+    <label class="drop" id="drop">📄 Drop a <b>.log / .txt</b> file here or click to pick one<input type="file" id="file" accept=".log,.txt,text/plain,application/octet-stream"></label>
     <div class="evbar">
-      <span title="Inbound EVENT_LOG entries don't record the URL that was called. Set it once here.">Inbound MI endpoint</span>
-      <input id="evUrl" type="text" placeholder="https://mi-host/jazzcash/whatsapp/inbound  (used for EVENT_LOG entries — not in the log)" spellcheck="false">
-      <input id="evAuth" type="text" placeholder="Authorization header (optional)" spellcheck="false">
+      <span title="Only needed for the MI's own inbound endpoints — the log doesn't record its own hostname.">MI host</span>
+      <input id="miHost" type="text" placeholder="http://jc-whatsapp-uat-mi:8290   (only used for calls INTO the MI)" spellcheck="false">
     </div>
-    <textarea id="input" placeholder="Paste WSO2 / Synapse log-mediator output here (JSON-wrapped lines, multi-line bodies — anything goes)…" spellcheck="false"></textarea>
+    <textarea id="input" placeholder="…or paste the log lines here. Any mix is fine: DOWNSTREAM_CALL, EVENT_LOG_REQUEST, SOAP Envelopes, token calls, media downloads." spellcheck="false"></textarea>
   </section>
 
   <section class="panel">
     <div class="panel-head">
-      <h2>Generated cURL</h2>
+      <h2>2 · cURLs</h2>
       <div class="actions">
+        <select id="filter">
+          <option value="success">Successful calls only</option>
+          <option value="all">Every call</option>
+          <option value="downstream">MI ➜ outside (Infobip / Antlere / CPS)</option>
+          <option value="inbound">Outside ➜ MI (webhooks / callbacks)</option>
+        </select>
+        <label class="opt"><input type="checkbox" id="optMask"> mask secrets</label>
+        <label class="opt"><input type="checkbox" id="optExplain" checked> explain</label>
         <button id="btnCopyAll">Copy all</button>
         <button id="btnDownload">Download .sh</button>
       </div>
     </div>
-    <div id="out"><div class="empty">Paste logs on the left and hit <b>Generate</b>.</div></div>
+    <div id="out"><div class="empty">Drop a log file or paste lines on the left.<br><small>You'll get one card per API call: what it does, the exact cURL to replay it, and what the system answered.</small></div></div>
   </section>
 </main>
 <div class="toast" id="toast">Copied</div>
@@ -94,67 +102,85 @@
 <script>
 const $ = s => document.querySelector(s);
 const input = $('#input'), out = $('#out'), toast = $('#toast');
-let lastScript = '';
+let lastScript = '', parsed = null;
+const showToast = m => { toast.textContent = m; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1400); };
+const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1400); }
-function esc(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function explainCurl(r) {
+  const bits = [];
+  bits.push(`<code>-X ${esc(r.method)}</code> ${r.method === 'GET' ? 'fetches' : 'sends'} to <code>${esc(Log2Curl.resolveUrl(r, {miHost: $('#miHost').value}))}</code>.`);
+  if (r.authHeader) bits.push(`<code>Authorization</code> is the ${/^App /.test(r.authHeader) ? 'Infobip API key' : /^Bearer /.test(r.authHeader) ? 'Antlere JWT (expires — regenerate with the token call if you get 401)' : /^Basic /.test(r.authHeader) ? 'client-id:secret for Antlere' : 'credential'} the MI used.`);
+  if (r.headers && r.headers.SOAPAction) bits.push(`<code>SOAPAction</code> + <code>Cookie</code> are what Huawei CPS requires on every SOAP call.`);
+  if (r.correlationId) bits.push(`<code>X-Correlation-ID</code> lets you find this replay in the MI logs again.`);
+  if (r.body) bits.push(`<code>--data</code> is the exact ${r.bodyIsXml ? 'XML' : 'JSON'} payload that was sent${r.body.length > 100000 ? ' (includes a large base64 attachment)' : ''}.`);
+  if (r.extraCurl) bits.push(`<code>--output</code> saves the downloaded file to disk.`);
+  return bits.join(' ');
+}
 
 function render() {
   const text = input.value;
-  if (!text.trim()) { out.innerHTML = '<div class="empty">Nothing to parse.</div>'; return; }
-  const opts = { successOnly: $('#optSuccessOnly').checked, maskToken: $('#optMask').checked, eventUrl: $('#evUrl').value, eventAuth: $('#evAuth').value };
-  const { requests, errors } = Log2Curl.parse(text);
-  const shown = opts.successOnly ? requests.filter(r => r.success !== false) : requests;
+  if (!text.trim()) { out.innerHTML = '<div class="empty">Nothing to parse.</div>'; lastScript = ''; return; }
+  const opts = { maskToken: $('#optMask').checked, miHost: $('#miHost').value };
+  parsed = Log2Curl.parse(text);
+  const { requests, errors } = parsed;
+  const f = $('#filter').value;
+  const shown = requests.filter(r => f === 'all' ? true : f === 'success' ? r.success !== false : f === 'downstream' ? (r.kind === 'downstream' || r.kind === 'soap') : r.kind === 'inbound');
 
   if (!shown.length) {
-    out.innerHTML = `<div class="empty">No ${opts.successOnly ? 'successful ' : ''}requests found.${errors.length ? '<br><small>' + esc(errors.join(' · ')) + '</small>' : ''}${requests.length && opts.successOnly ? '<br><small>Untick "success only" to see ' + requests.length + ' request(s) with non-success responses.</small>' : ''}</div>`;
+    out.innerHTML = `<div class="empty">No matching calls.${errors.length ? '<br><small>' + esc(errors.join(' · ')) + '</small>' : ''}${requests.length ? '<br><small>' + requests.length + ' call(s) exist — change the filter above.</small>' : ''}</div>`;
     lastScript = ''; return;
   }
 
-  lastScript = '#!/usr/bin/env bash\nset -euo pipefail\n\n' + shown.map(r => Log2Curl.toCurl(r, opts) + (r.response ? '\n\n# Expected response:\n' + Log2Curl.pretty(r.response).split('\n').map(l => '#   ' + l).join('\n') : '')).join('\n\n\n') + '\n';
+  lastScript = '#!/usr/bin/env bash\nset -euo pipefail\n\n' + shown.map((r, i) =>
+    `# ${i + 1}. ${r.api}  (${r.direction})  ${r.time || ''}\n# ${r.what}\n` +
+    (!r.urlKnown ? '# ⚠ URL not in log — fill in before running\n' : '') +
+    Log2Curl.toCurl(r, opts) + (r.response ? '\n\n# Expected response:\n' + Log2Curl.pretty(r.response).split('\n').map(l => '#   ' + l).join('\n') : '')
+  ).join('\n\n\n') + '\n';
 
-  out.innerHTML = shown.map((r, i) => {
-    const curl = Log2Curl.toCurl(r, opts);
+  const ok = requests.filter(r => r.success === true).length, bad = requests.filter(r => r.success === false).length;
+  const explain = $('#optExplain').checked;
+
+  out.innerHTML = `<div class="summary"><span><b>${requests.length}</b> calls found</span><span><b style="color:var(--green)">${ok}</b> succeeded</span><span><b style="color:var(--red)">${bad}</b> failed</span><span><b>${requests.length - ok - bad}</b> no response logged</span><span>showing <b>${shown.length}</b></span></div>` +
+  shown.map((r, i) => {
+    const curl = Log2Curl.toCurl(r, Object.assign({ forDisplay: true }, opts));
     const status = r.success === true ? '<span class="badge b-ok">SUCCESS</span>' : r.success === false ? '<span class="badge b-err">FAILED</span>' : '<span class="badge b-warn">NO RESPONSE</span>';
+    const dir = `<span class="badge ${r.kind === 'soap' ? 'b-soap' : 'b-dir'}">${esc(r.direction)}</span>`;
     return `<div class="req">
-      <div class="req-head">
-        <span class="badge b-method">${esc(r.method)}</span>
-        ${r.kind === 'event' ? '<span class="badge b-kind">INBOUND</span>' : ''}
-        ${status}
-        <span class="api">${esc(r.api || (r.url ? new URL(r.url).pathname : ''))}</span>
-        <span class="time">${esc(r.time || '')}</span>
-        <button class="copy" data-i="${i}">Copy</button>
-      </div>
-      ${r.bodyComplete ? '' : '<div class="note">⚠ Request body appears truncated in the log — complete it before running.</div>'}
-      ${r.kind === 'event' && !opts.eventUrl.trim() ? '<div class="note">ℹ This is an inbound EVENT_LOG entry — the log doesn\'t record the URL. Fill in <b>Inbound MI endpoint</b> above to get a runnable cURL.' + (r.tranId ? ' TRAN_ID ' + esc(r.tranId) : '') + '</div>' : ''}
+      <div class="req-head"><span class="badge b-method">${esc(r.method)}</span>${dir}${status}<span class="api">${esc(r.api)}</span><span class="time">${esc(r.time || '')}</span>
+        <div class="tools"><button data-copy="${i}">Copy cURL</button></div></div>
+      ${explain ? `<div class="what"><b>What this does:</b> ${esc(r.what)}</div><div class="expl">${explainCurl(r)}</div>` : ''}
+      ${r.bodyComplete ? '' : '<div class="note">⚠ Body looks truncated in the log — paste more lines.</div>'}
+      ${!r.urlKnown ? `<div class="note">⚠ The log doesn't record this URL. ${r.kind === 'inbound' ? 'Fill in <b>MI host</b> on the left' : 'Ask the team for the endpoint'} and replace the <code>{…}</code> part before running.</div>` : ''}
+      ${r.success === false ? '<div class="note">ℹ This call <b>failed</b> in the original run — shown because filter allows it. Replaying will likely fail the same way.</div>' : ''}
       <pre id="curl-${i}">${esc(curl)}</pre>
-      ${r.response ? `<div class="resp-title">Expected response (from log)</div><pre class="resp">${esc(Log2Curl.pretty(r.response))}</pre>` : ''}
+      ${r.response ? `<div class="resp-title">What the system answered</div><pre class="resp">${esc(Log2Curl.pretty(r.response))}</pre>` : ''}
     </div>`;
-  }).join('');
+  }).join('') +
+  `<details class="gloss"><summary>What do the parts of a cURL mean?</summary><table>${Log2Curl.GLOSSARY.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>
+   <p>To run one: copy it, open a terminal (Mac/Linux: Terminal; Windows: Git Bash or WSL), paste, press Enter. The response prints right there.</p></details>`;
 
-  out.querySelectorAll('.copy').forEach(b => b.onclick = () => {
-    navigator.clipboard.writeText($('#curl-' + b.dataset.i).textContent).then(() => showToast('Copied cURL'));
+  out.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
+    const r = shown[Number(b.dataset.copy)];
+    navigator.clipboard.writeText(Log2Curl.toCurl(r, opts)).then(() => showToast('Copied full cURL'));
   });
 }
 
-$('#btnGen').onclick = render;
-$('#optSuccessOnly').onchange = render;
-$('#optMask').onchange = render;
-$('#evUrl').oninput = render; $('#evAuth').oninput = render;
-$('#evUrl').value = localStorage.getItem('evUrl') || ''; $('#evAuth').value = localStorage.getItem('evAuth') || '';
-$('#evUrl').addEventListener('change', e => localStorage.setItem('evUrl', e.target.value));
-$('#evAuth').addEventListener('change', e => localStorage.setItem('evAuth', e.target.value));
+$('#btnGen').onclick = render; $('#filter').onchange = render; $('#optMask').onchange = render; $('#optExplain').onchange = render; $('#miHost').oninput = render;
+$('#miHost').value = localStorage.getItem('miHost') || ''; $('#miHost').addEventListener('change', e => localStorage.setItem('miHost', e.target.value));
 $('#btnClear').onclick = () => { input.value = ''; render(); input.focus(); };
 $('#btnCopyAll').onclick = () => { if (!lastScript) return showToast('Nothing to copy'); navigator.clipboard.writeText(lastScript).then(() => showToast('Copied all')); };
-$('#btnDownload').onclick = () => {
-  if (!lastScript) return showToast('Nothing to download');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lastScript], { type: 'text/x-sh' }));
-  a.download = 'replay.sh'; a.click(); URL.revokeObjectURL(a.href);
-};
+$('#btnDownload').onclick = () => { if (!lastScript) return showToast('Nothing to download'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lastScript], { type: 'text/x-sh' })); a.download = 'replay.sh'; a.click(); URL.revokeObjectURL(a.href); };
 $('#btnSample').onclick = () => { input.value = Log2Curl.SAMPLE; render(); };
 input.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') render(); });
 input.addEventListener('paste', () => setTimeout(render, 0));
+
+const drop = $('#drop'), file = $('#file');
+function loadFile(f) { if (!f) return; const rd = new FileReader(); rd.onload = () => { input.value = rd.result; render(); showToast('Loaded ' + f.name); }; rd.readAsText(f); }
+file.onchange = () => loadFile(file.files[0]);
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+document.body.addEventListener('dragover', e => e.preventDefault()); document.body.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
 </script>
 </body>
 </html>
